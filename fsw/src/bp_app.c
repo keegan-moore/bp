@@ -76,7 +76,7 @@ static CFE_Status_t BP_SetupLibrary(void)
 
     bplib_mpool_t * mpool = bplib_route_get_mpool(BP_GlobalData.RouteTbl);
     BPL_Status_t BPL_EVM_Status;
-    BPL_EVM_Status = BPL_EVM_Initialize(mpool, EventProxyCallbacks);
+    BPL_EVM_Status = BPL_EVM_Initialize(mpool, &EventProxyCallbacks);
     if (BPL_EVM_Status.ReturnValue != BPL_STATUS_SUCCESS)
     {
         fprintf(stderr, "%s(): BPL_EVM_Initialize failed\n", __func__);
