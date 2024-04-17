@@ -167,10 +167,18 @@ static CFE_Status_t AppInit(void)
     BP_DoRebuildFlowBitmask();
 
     /* Application startup event message */
+    BPL_Status_t BPL_EVM_Status;
     bplib_mpool_t * mpool = bplib_route_get_mpool(BP_GlobalData.RouteTbl);
-    (void) BPL_EVM_SendEvent(mpool, BP_INIT_INF_EID, CFE_EVS_EventType_INFORMATION,
+    BPL_EVM_Status = BPL_EVM_SendEvent(mpool, BP_INIT_INF_EID, CFE_EVS_EventType_INFORMATION,
                              "BP App Version %d.%d.%d.%d: Initialized",
                       BP_MAJOR_VERSION, BP_MINOR_VERSION, BP_REVISION, BP_MISSION_REV);
+    if (BPL_EVM_Status.ReturnValue != BPL_STATUS_SUCCESS)
+    {
+        fprintf(stderr, "BP %s(): BPL_EVM_SendEvent failed with retval %d\n",
+            __func__,
+            BPL_EVM_Status.ReturnValue);
+        return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
+    }
 
     return CFE_SUCCESS;
 }
