@@ -39,6 +39,7 @@
 #include "bp_dispatch.h"
 #include "bp_cla_bundle_io.h"
 #include "bplib_routing.h"
+#include "bplib_api_types.h"
 #include "bpl_evm_api.h"
 #include "bpnode_evp_cfs.h"
 
@@ -72,8 +73,10 @@ static CFE_Status_t BP_SetupLibrary(void)
         .SendEvent_Impl = BPNODE_EVP_SendEvent_Impl,
     };
 
+
+    bplib_mpool_t * mpool = bplib_route_get_mpool(BP_GlobalData.RouteTbl);
     BPL_Status_t BPL_EVM_Status;
-    BPL_EVM_Status = BPL_EVM_Initialize(EventProxyCallbacks);
+    BPL_EVM_Status = BPL_EVM_Initialize(mpool, &EventProxyCallbacks);
     if (BPL_EVM_Status.ReturnValue != BPL_STATUS_SUCCESS)
     {
         fprintf(stderr, "%s(): BPL_EVM_Initialize failed\n", __func__);
@@ -164,8 +167,18 @@ static CFE_Status_t AppInit(void)
     BP_DoRebuildFlowBitmask();
 
     /* Application startup event message */
-    (void) BPL_EVM_SendEvent(BP_INIT_INF_EID, CFE_EVS_EventType_INFORMATION, "BP App Version %d.%d.%d.%d: Initialized",
+    BPL_Status_t BPL_EVM_Status;
+    bplib_mpool_t * mpool = bplib_route_get_mpool(BP_GlobalData.RouteTbl);
+    BPL_EVM_Status = BPL_EVM_SendEvent(mpool, BP_INIT_INF_EID, CFE_EVS_EventType_INFORMATION,
+                             "BP App Version %d.%d.%d.%d: Initialized",
                       BP_MAJOR_VERSION, BP_MINOR_VERSION, BP_REVISION, BP_MISSION_REV);
+    if (BPL_EVM_Status.ReturnValue != BPL_STATUS_SUCCESS)
+    {
+        fprintf(stderr, "BP %s(): BPL_EVM_SendEvent failed with retval %d\n",
+            __func__,
+            BPL_EVM_Status.ReturnValue);
+        return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
+    }
 
     return CFE_SUCCESS;
 }
@@ -212,7 +225,8 @@ void BP_AppMain(void)
     }
 
     /* Exit Application */
-    BPL_EVM_Deinitialize();
+    bplib_mpool_t * mpool = bplib_route_get_mpool(BP_GlobalData.RouteTbl);
+    BPL_EVM_Deinitialize(mpool);
     CFE_EVS_SendEvent(BP_EXIT_ERR_EID, CFE_EVS_EventType_ERROR, "BP application terminating: result = 0x%08X",
                       (unsigned int)run_status);
     CFE_ES_WriteToSysLog("BP application terminating: result = 0x%08X\n",
